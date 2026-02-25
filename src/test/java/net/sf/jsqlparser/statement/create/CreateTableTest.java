@@ -1095,4 +1095,23 @@ public class CreateTableTest {
         assertEquals("session1", t.getSchemaName());
         assertEquals("a", t.getUnquotedName());
     }
+
+    @Test
+    void testDistributedByWithOpClass() throws JSQLParserException {
+        String sqlStr =
+                "CREATE TABLE dist_test (id INT, payload TEXT) DISTRIBUTED BY (id int4_ops, payload)";
+        assertSqlCanBeParsedAndDeparsed(sqlStr, true);
+    }
+
+    @Test
+    void testDistributedRandomly() throws JSQLParserException {
+        String sqlStr = "CREATE TABLE dist_random_test (id INT) DISTRIBUTED RANDOMLY";
+        assertSqlCanBeParsedAndDeparsed(sqlStr, true);
+    }
+
+    @Test
+    void testDistributedReplicated() throws JSQLParserException {
+        String sqlStr = "CREATE TABLE dist_repl_test (id INT) DISTRIBUTED REPLICATED";
+        assertSqlCanBeParsedAndDeparsed(sqlStr, true);
+    }
 }

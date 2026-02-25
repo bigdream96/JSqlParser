@@ -9046,6 +9046,7 @@ CreateTable CreateTable(boolean isUsingOrReplace):
     ReferentialAction.Action action = null;
     String tableColumn = null;
     List<String> columns = new ArrayList<String>();
+    List<String> distributedBy = new ArrayList<String>();
 }
 {
     { createTable.setOrReplace(isUsingOrReplace);}
@@ -9196,7 +9197,7 @@ CreateTable CreateTable(boolean isUsingOrReplace):
             )
         )
     ]
-    ( LOOKAHEAD(2, { getToken(1).kind != K_AS }) parameter=CreateParameter() { tableOptions.addAll(parameter); } )*
+    ( LOOKAHEAD(2, { getToken(1).kind != K_AS && !(getToken(1).kind == S_IDENTIFIER && getToken(1).image.equalsIgnoreCase("DISTRIBUTED")) }) parameter=CreateParameter() { tableOptions.addAll(parameter); } )*
 
     // see https://docs.oracle.com/cd/B19306_01/server.102/b14200/statements_7002.htm#i2126725
     // table properties , all these are optional
@@ -9205,6 +9206,19 @@ CreateTable CreateTable(boolean isUsingOrReplace):
     [
     <K_LIKE> ( LOOKAHEAD("(" Table() ")") "(" likeTable=Table() { createTable.setLikeTable(likeTable, true); } ")"
                  | likeTable=Table() { createTable.setLikeTable(likeTable, false); } )
+    ]
+    [
+        LOOKAHEAD(2, { getToken(1).kind == S_IDENTIFIER && getToken(1).image.equalsIgnoreCase("DISTRIBUTED") })
+        tk=<S_IDENTIFIER> { distributedBy.add(tk.image); }
+        (
+            <K_BY> stringList=DistributedByColumnsList() {
+                distributedBy.add("BY");
+                distributedBy.add(stringList);
+            }
+            |
+            LOOKAHEAD(2, { getToken(1).kind == S_IDENTIFIER && (getToken(1).image.equalsIgnoreCase("RANDOMLY") || getToken(1).image.equalsIgnoreCase("REPLICATED")) })
+            tk2=<S_IDENTIFIER> { distributedBy.add(tk2.image); }
+        )
     ]
     [ <K_COMMA> interleaveIn = SpannerInterleaveIn( ) { createTable.setSpannerInterleaveIn(interleaveIn); } ]
     {
@@ -9215,11 +9229,36 @@ CreateTable CreateTable(boolean isUsingOrReplace):
             createTable.setCreateOptionsStrings(createOptions);
         if (tableOptions.size() > 0)
             createTable.setTableOptionsStrings(tableOptions);
+        if (distributedBy.size() > 0)
+            createTable.setDistributedBy(distributedBy);
         if (columnDefinitions.size() > 0)
             createTable.setColumnDefinitions(columnDefinitions);
         if (columns.size() > 0)
             createTable.setColumns(columns);
         return createTable;
+    }
+}
+
+String DistributedByColumnsList():
+{
+    StringBuilder retval = new StringBuilder("(");
+    String column = null;
+    String opclass = null;
+}
+{
+    "("
+        column=RelObjectName() { retval.append(column); }
+        [ opclass=RelObjectName() { retval.append(" ").append(opclass); } ]
+        (
+            ","
+            { retval.append(", "); }
+            column=RelObjectName() { retval.append(column); }
+            [ opclass=RelObjectName() { retval.append(" ").append(opclass); } ]
+        )*
+    ")"
+    {
+        retval.append(")");
+        return retval.toString();
     }
 }
 

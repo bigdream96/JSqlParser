@@ -123,6 +123,10 @@ public class CreateTableDeParser extends AbstractDeParser<CreateTable> {
                 builder.append(")");
             }
         }
+        params = PlainSelect.getStringList(createTable.getDistributedBy(), false, false);
+        if (!params.isEmpty()) {
+            builder.append(' ').append(params);
+        }
         if (createTable.getSpannerInterleaveIn() != null) {
             builder.append(", ").append(createTable.getSpannerInterleaveIn());
         }

@@ -38,6 +38,7 @@ public class CreateTable implements Statement {
     private boolean orReplace = false;
 
     private RowMovement rowMovement;
+    private List<String> distributedBy;
 
     private SpannerInterleaveIn interleaveIn = null;
 
@@ -164,6 +165,14 @@ public class CreateTable implements Statement {
         this.rowMovement = rowMovement;
     }
 
+    public List<String> getDistributedBy() {
+        return distributedBy;
+    }
+
+    public void setDistributedBy(List<String> distributedBy) {
+        this.distributedBy = distributedBy;
+    }
+
     @Override
     @SuppressWarnings({"PMD.CyclomaticComplexity", "PMD.NPathComplexity"})
     public String toString() {
@@ -205,6 +214,10 @@ public class CreateTable implements Statement {
             sql += " LIKE " + (selectParenthesis ? "(" : "") + likeTable.toString()
                     + (selectParenthesis ? ")" : "");
         }
+        String distributedByClause = PlainSelect.getStringList(distributedBy, false, false);
+        if (distributedByClause != null && !distributedByClause.isEmpty()) {
+            sql += " " + distributedByClause;
+        }
         if (interleaveIn != null) {
             sql += ", " + interleaveIn;
         }
@@ -238,6 +251,11 @@ public class CreateTable implements Statement {
 
     public CreateTable withRowMovement(RowMovement rowMovement) {
         this.setRowMovement(rowMovement);
+        return this;
+    }
+
+    public CreateTable withDistributedBy(List<String> distributedBy) {
+        this.setDistributedBy(distributedBy);
         return this;
     }
 
